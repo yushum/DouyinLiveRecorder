@@ -37,8 +37,9 @@ from msg_push import (
 from ffmpeg_install import (
     check_ffmpeg, ffmpeg_path, current_env_path
 )
+from telegram_manager import TelegramManager, URLConfig
 
-version = "v4.0.7"
+version = "v4.0.7.1"
 platforms = ("\n国内站点：抖音|快手|虎牙|斗鱼|YY|B站|小红书|bigo|blued|网易CC|千度热播|猫耳FM|Look|TwitCasting|百度|微博|"
              "酷狗|花椒|流星|Acfun|畅聊|映客|音播|知乎|嗨秀|VV星球|17Live|浪Live|漂漂|六间房|乐嗨|花猫|淘宝|京东|咪咕|连接|来秀"
              "\n海外站点：TikTok|SOOP|PandaTV|WinkTV|FlexTV|PopkonTV|TwitchTV|LiveMe|ShowRoom|CHZZK|Shopee|"
@@ -74,6 +75,8 @@ rstr = r"[\/\\\:\*\？?\"\<\>\|&#.。,， ~！· ]"
 default_path = f'{script_path}/downloads'
 os.makedirs(default_path, exist_ok=True)
 file_update_lock = threading.Lock()
+telegram_manager_lock = threading.Lock()
+telegram_manager = None
 os_type = os.name
 clear_command = "cls" if os_type == 'nt' else "clear"
 color_obj = utils.Color()
@@ -85,6 +88,29 @@ def signal_handler(_signal, _frame):
 
 
 signal.signal(signal.SIGTERM, signal_handler)
+
+
+def start_telegram_manager(token: str, chat_id_text: str, admin_id_text: str) -> None:
+    global telegram_manager
+    chat_ids = TelegramManager.parse_ids(chat_id_text)
+    admin_ids = TelegramManager.parse_ids(admin_id_text)
+    if not admin_ids:
+        admin_ids = {chat_id for chat_id in chat_ids if chat_id > 0}
+    if not token or not admin_ids:
+        print("Telegram 快捷管理未启动：请配置 Bot Token 和管理员用户 ID")
+        return
+    with telegram_manager_lock:
+        if telegram_manager and telegram_manager.is_alive():
+            return
+        telegram_manager = TelegramManager(
+            token=token,
+            chat_ids=chat_ids,
+            admin_user_ids=admin_ids,
+            url_config=URLConfig(url_config_file, backup_dir, file_update_lock),
+            recording_provider=lambda: sorted(recording.copy()),
+        )
+        telegram_manager.start()
+        print("Telegram 快捷管理已启动")
 
 
 def display_info() -> None:
@@ -1841,8 +1867,18 @@ while True:
     bark_msg_ring = read_config_value(config, '推送配置', 'bark推送铃声', "bell")
     dingtalk_phone_num = read_config_value(config, '推送配置', '钉钉通知@对象(填手机号)', "")
     dingtalk_is_atall = options.get(read_config_value(config, '推送配置', '钉钉通知@全体(是/否)', "否"), False)
-    tg_token = read_config_value(config, '推送配置', 'tgapi令牌', "")
-    tg_chat_id = read_config_value(config, '推送配置', 'tg聊天id(个人或者群组id)', "")
+    tg_token = os.getenv('TG_BOT_TOKEN') or read_config_value(config, '推送配置', 'tgapi令牌', "")
+    tg_chat_id = os.getenv('TG_CHAT_ID') or read_config_value(
+        config, '推送配置', 'tg聊天id(个人或者群组id)', ""
+    )
+    tg_manager_enabled_text = os.getenv('TG_MANAGER_ENABLED') or read_config_value(
+        config, '推送配置', 'tg快捷管理录制地址(是/否)', "否"
+    )
+    tg_admin_user_ids = os.getenv('TG_ADMIN_USER_IDS') or read_config_value(
+        config, '推送配置', 'tg管理员用户id(逗号分隔)', ""
+    )
+    if options.get(tg_manager_enabled_text, False):
+        start_telegram_manager(tg_token, tg_chat_id, tg_admin_user_ids)
     email_host = read_config_value(config, '推送配置', 'SMTP邮件服务器', "")
     open_smtp_ssl = options.get(read_config_value(config, '推送配置', '是否使用SMTP服务SSL加密(是/否)', "是"), True)
     smtp_port = read_config_value(config, '推送配置', 'SMTP邮件服务器端口', "")
@@ -1946,6 +1982,7 @@ while True:
 
     try:
         url_comments, line_list, url_line_list = [[] for _ in range(3)]
+        configured_urls = set()
         with (open(url_config_file, "r", encoding=text_encoding, errors='ignore') as file):
             for origin_line in file:
                 if origin_line in line_list:
@@ -2098,6 +2135,7 @@ while True:
                             new_url = url.split('?')[0] + f'?host_id={host_id.group(1)}'
                             url = update_file(url_config_file, old_str=url, new_str=new_url)
 
+                    configured_urls.add(url)
                     url_comments = [i for i in url_comments if url not in i]
                     if is_comment_line:
                         url_comments.append(url)
@@ -2108,6 +2146,11 @@ while True:
                     if not origin_line.startswith('#'):
                         color_obj.print_colored(f"\r{origin_line.strip()} 本行包含未知链接.此条跳过", color_obj.YELLOW)
                         update_file(url_config_file, old_str=origin_line, new_str=origin_line, start_str='#')
+
+        # Stop workers whose URL was removed or replaced through Telegram or manual editing.
+        for running_url in list(running_list):
+            if running_url not in configured_urls and running_url not in url_comments:
+                url_comments.append(running_url)
 
         while len(need_update_line_list):
             a = need_update_line_list.pop()

@@ -10,6 +10,8 @@
 
 一款**简易**的可循环值守的直播录制工具，基于FFmpeg实现多平台直播源录制，支持自定义配置录制以及直播状态推送。
 
+本分支基于 [ihmily/DouyinLiveRecorder](https://github.com/ihmily/DouyinLiveRecorder) 修改，保留原项目 MIT 许可证，并增加 Telegram 按钮式主播管理。
+
 </div>
 
 ## 😺已支持平台
@@ -118,6 +120,19 @@
 
 - 要停止直播录制，Windows平台可执行StopRecording.vbs脚本文件，或者在录制界面使用 `Ctrl+C ` 组合键中断录制，若要停止其中某个直播间的录制，可在`URL_config.ini`文件中的地址前加#，会自动停止对应直播间的录制并正常保存已录制的视频。
 - 最后，欢迎右上角给本项目一个star，同时也非常乐意大家提交pr。
+
+### Telegram 主播管理
+
+在 `config/config.ini` 的 `[推送配置]` 中设置：
+
+```ini
+tgapi令牌 = 你的 Bot Token
+tg聊天id(个人或者群组id) = 允许使用的聊天 ID
+tg快捷管理录制地址(是/否) = 是
+tg管理员用户id(逗号分隔) = 你的 Telegram 用户 ID
+```
+
+也可使用环境变量 `TG_BOT_TOKEN`、`TG_CHAT_ID`、`TG_MANAGER_ENABLED=是` 和 `TG_ADMIN_USER_IDS`。启动后向 Bot 发送 `/manage`，即可通过按钮分页查看、暂停、恢复、修改和删除主播；点击添加后可以一次发送一条或多条链接，每行一条。所有修改会自动备份 `URL_config.ini`，主程序无需重启即可读取变更。
 
 &emsp;
 

@@ -1,5 +1,10 @@
 FROM python:3.11-slim
 
+LABEL org.opencontainers.image.title="DouyinLiveRecorder" \
+      org.opencontainers.image.version="4.0.7.1" \
+      org.opencontainers.image.source="https://github.com/yushum/DouyinLiveRecorder" \
+      org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 
 COPY . /app
