@@ -37,7 +37,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
           registry: docker.io
 
       - name: Build and push Docker image
@@ -47,8 +47,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ihmily/douyin-live-recorder:${{ github.event.inputs.tag_name || github.ref_name }} 
-            ihmily/douyin-live-recorder:latest
+            yushum/douyin-live-recorder:${{ github.event.inputs.tag_name || github.ref_name }}
+            yushum/douyin-live-recorder:latest
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
