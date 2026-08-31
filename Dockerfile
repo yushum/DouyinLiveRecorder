@@ -1,7 +1,9 @@
 FROM python:3.11-slim
 
+ARG VERSION=v4.0.7.1
+
 LABEL org.opencontainers.image.title="DouyinLiveRecorder" \
-      org.opencontainers.image.version="v4.0.7.1" \
+      org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/yushum/DouyinLiveRecorder" \
       org.opencontainers.image.licenses="MIT"
 
