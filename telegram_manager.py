@@ -24,7 +24,7 @@ from supported_urls import is_supported_url
 
 
 QUALITIES = ("原画", "蓝光", "超清", "高清", "标清", "流畅")
-PAGE_SIZE = 8
+PAGE_SIZE = 10
 PENDING_TIMEOUT_SECONDS = 600
 URL_PATTERN = re.compile(r"https?://[^\s,，]+", re.IGNORECASE)
 

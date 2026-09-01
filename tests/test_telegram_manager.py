@@ -53,9 +53,9 @@ class URLConfigTest(unittest.TestCase):
         self.assertNotIn("/300", final_text)
         self.assertTrue(any((Path(self.temp_dir.name) / "backup").iterdir()))
 
-    def test_list_uses_eight_items_per_page(self):
+    def test_list_uses_ten_items_per_page(self):
         self.path.write_text(
-            "".join(f"https://live.douyin.com/{index}\n" for index in range(10)),
+            "".join(f"https://live.douyin.com/{index}\n" for index in range(12)),
             encoding="utf-8-sig",
         )
         manager = TelegramManager("test", {1}, {1}, self.config, lambda: [])
@@ -66,7 +66,7 @@ class URLConfigTest(unittest.TestCase):
         self.assertEqual(method, "sendMessage")
         rows = payload["reply_markup"]["inline_keyboard"]
         streamer_buttons = [row for row in rows if row[0]["callback_data"].startswith("show:")]
-        self.assertEqual(len(streamer_buttons), 8)
+        self.assertEqual(len(streamer_buttons), 10)
         self.assertTrue(any(button["callback_data"] == "list:1" for row in rows for button in row))
 
     def test_configure_commands_registers_menu(self):
