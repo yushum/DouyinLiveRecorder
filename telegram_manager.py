@@ -261,6 +261,18 @@ class TelegramManager(threading.Thread):
             raise RuntimeError(body.get("description", "Telegram API 请求失败"))
         return body.get("result")
 
+    def _configure_commands(self):
+        commands = [
+            {"command": "manage", "description": "打开主播管理"},
+            {"command": "list", "description": "查看主播列表"},
+            {"command": "recording", "description": "查看正在录制"},
+            {"command": "cancel", "description": "取消当前操作"},
+        ]
+        self._api("setMyCommands", {"commands": commands})
+        for chat_id in self.chat_ids:
+            if chat_id > 0:
+                self._api("setChatMenuButton", {"chat_id": chat_id, "menu_button": {"type": "commands"}})
+
     @staticmethod
     def _keyboard(rows: list[list[tuple[str, str]]]) -> dict:
         return {
@@ -514,6 +526,10 @@ class TelegramManager(threading.Thread):
                 return
 
     def run(self):
+        try:
+            self._configure_commands()
+        except Exception as error:
+            print(f"Telegram 命令菜单注册失败: {error}")
         try:
             self._discard_backlog()
         except Exception as error:

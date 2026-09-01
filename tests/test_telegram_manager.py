@@ -69,6 +69,21 @@ class URLConfigTest(unittest.TestCase):
         self.assertEqual(len(streamer_buttons), 8)
         self.assertTrue(any(button["callback_data"] == "list:1" for row in rows for button in row))
 
+    def test_configure_commands_registers_menu(self):
+        manager = TelegramManager("test", {1, -2}, {1}, self.config, lambda: [])
+        calls = []
+        manager._api = lambda method, payload, timeout=20: calls.append((method, payload))
+
+        manager._configure_commands()
+
+        self.assertEqual(calls[0][0], "setMyCommands")
+        self.assertEqual(
+            [item["command"] for item in calls[0][1]["commands"]],
+            ["manage", "list", "recording", "cancel"],
+        )
+        self.assertEqual(calls[1], ("setChatMenuButton", {"chat_id": 1, "menu_button": {"type": "commands"}}))
+        self.assertEqual(len(calls), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
