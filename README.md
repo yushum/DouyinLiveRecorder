@@ -132,7 +132,7 @@ tg快捷管理录制地址(是/否) = 是
 tg管理员用户id(逗号分隔) = 你的 Telegram 用户 ID
 ```
 
-也可使用环境变量 `TG_BOT_TOKEN`、`TG_CHAT_ID`、`TG_MANAGER_ENABLED=是` 和 `TG_ADMIN_USER_IDS`。启动后向 Bot 发送 `/manage`，即可通过按钮分页查看、暂停、恢复、修改和删除主播；点击添加后可以一次发送一条或多条链接，每行一条。所有修改会自动备份 `URL_config.ini`，主程序无需重启即可读取变更。
+也可使用环境变量 `TG_BOT_TOKEN`、`TG_CHAT_ID`、`TG_MANAGER_ENABLED=是` 和 `TG_ADMIN_USER_IDS`。启动后向 Bot 发送 `/manage`，即可通过按钮分页查看、暂停、恢复、修改和删除主播；点击添加后可以一次发送一条或多条链接，每行一条，格式为 `[画质,]链接[,主播名称]`。仅接受下方已支持平台的直播间链接或 `.flv`、`.m3u8` 直播直链；未完成的输入操作会在 10 分钟后失效。所有修改会自动备份 `URL_config.ini`，主程序无需重启即可读取变更。
 
 &emsp;
 

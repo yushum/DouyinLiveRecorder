@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from supported_urls import is_supported_url
+
 
 QUALITIES = ("原画", "蓝光", "超清", "高清", "标清", "流畅")
 PAGE_SIZE = 8
@@ -78,7 +80,7 @@ class URLConfig:
             url = parts[0]
             name = parts[1] if len(parts) > 1 else ""
 
-        if not URL_PATTERN.fullmatch(url):
+        if not URL_PATTERN.fullmatch(url) or not is_supported_url(url):
             return None
         return StreamEntry(line_index, paused, quality, explicit_quality, url, name)
 
@@ -187,8 +189,8 @@ class URLConfig:
             return not entry.paused
 
     def update_url(self, expected_revision: str, line_index: int, new_url: str) -> None:
-        if not URL_PATTERN.fullmatch(new_url.strip()):
-            raise ValueError("请输入完整的 http:// 或 https:// 直播链接")
+        if not URL_PATTERN.fullmatch(new_url.strip()) or not is_supported_url(new_url):
+            raise ValueError("请输入受支持平台的直播间链接，或 .flv/.m3u8 直播直链")
         with self.lock:
             lines, entry = self._entry_for_change(expected_revision, line_index)
             value = f"{entry.quality},{new_url.strip()}" if entry.explicit_quality else new_url.strip()
@@ -420,7 +422,7 @@ class TelegramManager(threading.Thread):
         if pending["action"] == "add_input":
             valid, invalid = self.url_config.parse_additions(text)
             if not valid:
-                self._send(chat_id, "没有识别到有效直播链接，请重新发送或使用 /cancel")
+                self._send(chat_id, "没有识别到受支持的直播链接，请发送项目支持的平台地址或 .flv/.m3u8 直链，也可使用 /cancel")
                 return
             self._set_pending(user_id, action="add_confirm", items=valid)
             preview = "\n".join(f"• {line}" for line in valid[:10])
@@ -428,7 +430,7 @@ class TelegramManager(threading.Thread):
                 preview += f"\n…其余 {len(valid) - 10} 条"
             summary = f"准备添加 {len(valid)} 条"
             if invalid:
-                summary += f"，另有 {len(invalid)} 条无法识别"
+                summary += f"，另有 {len(invalid)} 条格式或平台不支持"
             self._send(
                 chat_id,
                 f"{summary}\n\n{preview}",
@@ -436,9 +438,8 @@ class TelegramManager(threading.Thread):
             )
             return
         if pending["action"] == "edit_link":
-            match = URL_PATTERN.fullmatch(text)
-            if not match:
-                self._send(chat_id, "请输入一条完整的 http:// 或 https:// 直播链接，或使用 /cancel")
+            if not URL_PATTERN.fullmatch(text) or not is_supported_url(text):
+                self._send(chat_id, "请输入受支持平台的直播间链接或 .flv/.m3u8 直播直链，也可使用 /cancel")
                 return
             try:
                 self.url_config.update_url(pending["revision"], pending["line_index"], text)

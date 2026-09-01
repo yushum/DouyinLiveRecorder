@@ -98,6 +98,18 @@ class URLConfigTest(unittest.TestCase):
         manager._handle_message({"chat": {"id": 1}, "from": {"id": 1}, "text": "/list"})
         self.assertNotIn(1, manager.pending)
 
+    def test_add_rejects_unsupported_web_pages(self):
+        valid, invalid = self.config.parse_additions(
+            "https://live.douyin.com/123\n"
+            "https://example.com/not-a-live-room\n"
+            "https://media.example.com/live/test.m3u8"
+        )
+        self.assertEqual(
+            valid,
+            ["https://live.douyin.com/123", "https://media.example.com/live/test.m3u8"],
+        )
+        self.assertEqual(invalid, ["https://example.com/not-a-live-room"])
+
 
 if __name__ == "__main__":
     unittest.main()

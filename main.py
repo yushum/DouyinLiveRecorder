@@ -38,8 +38,9 @@ from ffmpeg_install import (
     check_ffmpeg, ffmpeg_path, current_env_path
 )
 from telegram_manager import TelegramManager, URLConfig
+from supported_urls import is_supported_url
 
-version = "v4.0.7.3"
+version = "v4.0.7.4"
 platforms = ("\n国内站点：抖音|快手|虎牙|斗鱼|YY|B站|小红书|bigo|blued|网易CC|千度热播|猫耳FM|Look|TwitCasting|百度|微博|"
              "酷狗|花椒|流星|Acfun|畅聊|映客|音播|知乎|嗨秀|VV星球|17Live|浪Live|漂漂|六间房|乐嗨|花猫|淘宝|京东|咪咕|连接|来秀"
              "\n海外站点：TikTok|SOOP|PandaTV|WinkTV|FlexTV|PopkonTV|TwitchTV|LiveMe|ShowRoom|CHZZK|Shopee|"
@@ -2029,85 +2030,6 @@ while True:
                 url = 'https://' + url if '://' not in url else url
                 url_host = url.split('/')[2]
 
-                platform_host = [
-                    'live.douyin.com',
-                    'v.douyin.com',
-                    'www.douyin.com',
-                    'live.kuaishou.com',
-                    'www.huya.com',
-                    'www.douyu.com',
-                    'www.yy.com',
-                    'live.bilibili.com',
-                    'www.redelight.cn',
-                    'www.xiaohongshu.com',
-                    'xhslink.com',
-                    'www.bigo.tv',
-                    'slink.bigovideo.tv',
-                    'app.blued.cn',
-                    'cc.163.com',
-                    'qiandurebo.com',
-                    'fm.missevan.com',
-                    'look.163.com',
-                    'twitcasting.tv',
-                    'live.baidu.com',
-                    'weibo.com',
-                    'fanxing.kugou.com',
-                    'fanxing2.kugou.com',
-                    'mfanxing.kugou.com',
-                    'www.huajiao.com',
-                    'www.7u66.com',
-                    'wap.7u66.com',
-                    'live.acfun.cn',
-                    'm.acfun.cn',
-                    'live.tlclw.com',
-                    'wap.tlclw.com',
-                    'live.ybw1666.com',
-                    'wap.ybw1666.com',
-                    'www.inke.cn',
-                    'www.zhihu.com',
-                    'www.haixiutv.com',
-                    "h5webcdnp.vvxqiu.com",
-                    "17.live",
-                    'www.lang.live',
-                    "m.pp.weimipopo.com",
-                    "v.6.cn",
-                    "m.6.cn",
-                    'www.lehaitv.com',
-                    'h.catshow168.com',
-                    'e.tb.cn',
-                    'huodong.m.taobao.com',
-                    '3.cn',
-                    'eco.m.jd.com',
-                    'www.miguvideo.com',
-                    'm.miguvideo.com',
-                    'show.lailianjie.com',
-                    'www.imkktv.com',
-                    'www.picarto.tv'
-                ]
-                overseas_platform_host = [
-                    'www.tiktok.com',
-                    'play.sooplive.co.kr',
-                    'm.sooplive.co.kr',
-                    'www.sooplive.com',
-                    'm.sooplive.com',
-                    'www.pandalive.co.kr',
-                    'www.winktv.co.kr',
-                    'www.flextv.co.kr',
-                    'www.ttinglive.com',
-                    'www.popkontv.com',
-                    'www.twitch.tv',
-                    'www.liveme.com',
-                    'www.showroom-live.com',
-                    'chzzk.naver.com',
-                    'm.chzzk.naver.com',
-                    'live.shopee.',
-                    '.shp.ee',
-                    'www.youtube.com',
-                    'youtu.be',
-                    'www.faceit.com'
-                ]
-
-                platform_host.extend(overseas_platform_host)
                 clean_url_host_list = (
                     "live.douyin.com",
                     "live.bilibili.com",
@@ -2122,10 +2044,7 @@ while True:
                     'www.lehaitv.com'
                 )
 
-                if 'live.shopee.' in url_host or '.shp.ee' in url_host:
-                    url_host = 'live.shopee.' if 'live.shopee.' in url_host else '.shp.ee'
-
-                if url_host in platform_host or any(ext in url for ext in (".flv", ".m3u8")):
+                if is_supported_url(url):
                     if url_host in clean_url_host_list:
                         url = update_file(url_config_file, old_str=url, new_str=url.split('?')[0])
 

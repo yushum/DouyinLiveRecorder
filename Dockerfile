@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-ARG VERSION=v4.0.7.3
+ARG VERSION=v4.0.7.4
 
 LABEL org.opencontainers.image.title="DouyinLiveRecorder" \
       org.opencontainers.image.version="${VERSION}" \
