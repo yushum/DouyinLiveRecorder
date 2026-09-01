@@ -84,6 +84,20 @@ class URLConfigTest(unittest.TestCase):
         self.assertEqual(calls[1], ("setChatMenuButton", {"chat_id": 1, "menu_button": {"type": "commands"}}))
         self.assertEqual(len(calls), 2)
 
+    def test_pending_operation_expires_and_navigation_clears_it(self):
+        manager = TelegramManager("test", {1}, {1}, self.config, lambda: [])
+        calls = []
+        manager._api = lambda method, payload, timeout=20: calls.append((method, payload))
+
+        manager.pending[1] = {"action": "add_input", "expires_at": 0}
+        manager._handle_message({"chat": {"id": 1}, "from": {"id": 1}, "text": "稍后再说"})
+        self.assertNotIn(1, manager.pending)
+        self.assertIn("操作已超时", calls[-1][1]["text"])
+
+        manager._set_pending(1, action="add_input")
+        manager._handle_message({"chat": {"id": 1}, "from": {"id": 1}, "text": "/list"})
+        self.assertNotIn(1, manager.pending)
+
 
 if __name__ == "__main__":
     unittest.main()

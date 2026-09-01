@@ -23,6 +23,7 @@ from typing import Callable
 
 QUALITIES = ("原画", "蓝光", "超清", "高清", "标清", "流畅")
 PAGE_SIZE = 8
+PENDING_TIMEOUT_SECONDS = 600
 URL_PATTERN = re.compile(r"https?://[^\s,，]+", re.IGNORECASE)
 
 
@@ -237,6 +238,17 @@ class TelegramManager(threading.Thread):
         self.pending: dict[int, dict] = {}
         self.offset: int | None = None
 
+    def _set_pending(self, user_id: int, **values):
+        values["expires_at"] = time.monotonic() + PENDING_TIMEOUT_SECONDS
+        self.pending[user_id] = values
+
+    def _get_pending(self, user_id: int) -> dict | None:
+        pending = self.pending.get(user_id)
+        if pending and pending.get("expires_at", 0) > time.monotonic():
+            return pending
+        self.pending.pop(user_id, None)
+        return None
+
     @staticmethod
     def parse_ids(value: str) -> set[int]:
         result = set()
@@ -389,9 +401,11 @@ class TelegramManager(threading.Thread):
             self._menu(chat_id)
             return
         if command == "/list":
+            self.pending.pop(user_id, None)
             self._list(chat_id, 0)
             return
         if command == "/recording":
+            self.pending.pop(user_id, None)
             self._recording(chat_id)
             return
         if command == "/cancel":
@@ -399,16 +413,16 @@ class TelegramManager(threading.Thread):
             self._send(chat_id, "已取消", [[("🏠 返回主页", "menu")]])
             return
 
-        pending = self.pending.get(user_id)
+        pending = self._get_pending(user_id)
         if not pending:
-            self._send(chat_id, "请使用 /manage 打开管理菜单")
+            self._send(chat_id, "当前没有待处理操作或操作已超时，请使用 /manage 打开管理菜单")
             return
         if pending["action"] == "add_input":
             valid, invalid = self.url_config.parse_additions(text)
             if not valid:
                 self._send(chat_id, "没有识别到有效直播链接，请重新发送或使用 /cancel")
                 return
-            pending.update(action="add_confirm", items=valid)
+            self._set_pending(user_id, action="add_confirm", items=valid)
             preview = "\n".join(f"• {line}" for line in valid[:10])
             if len(valid) > 10:
                 preview += f"\n…其余 {len(valid) - 10} 条"
@@ -447,6 +461,8 @@ class TelegramManager(threading.Thread):
         data = query.get("data", "")
         parts = data.split(":")
         action = parts[0]
+        if action not in ("add_yes", "add_no"):
+            self.pending.pop(user_id, None)
         try:
             if action == "menu":
                 self._menu(chat_id, message_id)
@@ -455,10 +471,10 @@ class TelegramManager(threading.Thread):
             elif action == "recording":
                 self._recording(chat_id, message_id)
             elif action == "add":
-                self.pending[user_id] = {"action": "add_input"}
+                self._set_pending(user_id, action="add_input")
                 self._edit(chat_id, message_id, "请发送一条或多条直播链接，每行一条。\n可使用：超清,链接\n发送 /cancel 取消")
             elif action == "add_yes":
-                pending = self.pending.get(user_id, {})
+                pending = self._get_pending(user_id) or {}
                 if pending.get("action") != "add_confirm":
                     raise ValueError("添加内容已过期，请重新操作")
                 added, duplicates = self.url_config.add(pending["items"])
@@ -493,12 +509,13 @@ class TelegramManager(threading.Thread):
             elif action == "edit":
                 revision, line_index, page = parts[1], int(parts[2]), int(parts[3])
                 self._find_entry(revision, line_index)
-                self.pending[user_id] = {
-                    "action": "edit_link",
-                    "revision": revision,
-                    "line_index": line_index,
-                    "page": page,
-                }
+                self._set_pending(
+                    user_id,
+                    action="edit_link",
+                    revision=revision,
+                    line_index=line_index,
+                    page=page,
+                )
                 self._edit(chat_id, message_id, "请发送新的完整直播链接，发送 /cancel 取消")
             elif action == "qmenu":
                 revision, line_index, page = parts[1], int(parts[2]), int(parts[3])
