@@ -24,6 +24,14 @@ SUPPORTED_HOSTS = frozenset({
     "www.youtube.com", "youtu.be", "www.faceit.com",
 })
 
+OVERSEAS_PLATFORM_HOSTS = (
+    "www.tiktok.com", "play.sooplive.co.kr", "m.sooplive.co.kr", "www.sooplive.com",
+    "m.sooplive.com", "www.pandalive.co.kr", "www.winktv.co.kr", "www.flextv.co.kr",
+    "www.ttinglive.com", "www.popkontv.com", "www.twitch.tv", "www.liveme.com",
+    "www.showroom-live.com", "chzzk.naver.com", "m.chzzk.naver.com", "live.shopee.",
+    ".shp.ee", "www.youtube.com", "youtu.be", "www.faceit.com",
+)
+
 
 def is_supported_url(url: str) -> bool:
     try:
